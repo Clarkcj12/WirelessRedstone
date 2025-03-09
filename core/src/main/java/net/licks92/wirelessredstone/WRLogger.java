@@ -4,9 +4,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.ConsoleCommandSender;
 
+import java.util.Optional;
+
 public class WRLogger {
 
-    private final ConsoleCommandSender console;
+    private final Optional<ConsoleCommandSender> console;
     private final String prefix;
     private final boolean debug;
     private final boolean color;
