@@ -33,9 +33,9 @@ public class Utils {
     );
 
     /**
-     * Gets the current Minecraft version from Paper's API.
+     * Retrieves the current Minecraft version as a string using the Bukkit API.
      *
-     * @return A string representing the Minecraft version
+     * @return A string representing the current Minecraft version.
      */
     private static String getMinecraftVersion() {
         // Utilize Paper's API for better version handling
@@ -43,9 +43,13 @@ public class Utils {
     }
 
     /**
-     * Parses the Minecraft version into a `Version` object.
+     * Parses the current Minecraft version string into a {@code Version} object.
+     * Extracts the major and minor version numbers from the string and
+     * encapsulates them into a {@code Version} record. If parsing the version
+     * fails, an empty {@code Optional} is returned.
      *
-     * @return Optional Version if parsing is successful
+     * @return An {@code Optional<Version>} containing the parsed version if successful,
+     *         or an empty {@code Optional} if an exception occurs during parsing.
      */
     private static Optional<Version> parseVersion() {
         try {
@@ -58,9 +62,11 @@ public class Utils {
     }
 
     /**
-     * Checks if the server version is compatible with Minecraft 1.8 or newer.
+     * Determines if the current Minecraft version is compatible by checking
+     * whether the major version is greater than 1, or if the major version is 1
+     * and the minor version is at least 8.
      *
-     * @return True if compatible; otherwise, false.
+     * @return true if the Minecraft version is 1.8 or newer, false if parsing fails or the version is incompatible.
      */
     public static boolean isCompatible() {
         return parseVersion()
@@ -69,9 +75,10 @@ public class Utils {
     }
 
     /**
-     * Checks if the new material system (1.13+) is present.
+     * Determines if the current system uses the new Minecraft material system
+     * introduced in version 1.13 or higher.
      *
-     * @return True if the new material system is enabled; otherwise, false.
+     * @return true if the Minecraft version is 1.13 or newer, false otherwise.
      */
     public static boolean isNewMaterialSystem() {
         return parseVersion()
@@ -80,13 +87,18 @@ public class Utils {
     }
 
     /**
-     * Unified message sender with enhanced customization.
+     * Sends a message to the specified {@code CommandSender} with an optional prefix and
+     * formatting to indicate whether it is an error message. The message can be
+     * conditionally suppressed based on a silent mode configuration.
      *
-     * @param message     The message to send
-     * @param sender      The target recipient
-     * @param isError     Whether the message indicates an error
-     * @param prefix      An optional prefix (null for no prefix)
-     * @param checkSilent Whether to suppress message in silent mode
+     * @param message      The message to be sent to the {@code CommandSender}.
+     * @param sender       The {@code CommandSender} who will receive the message.
+     * @param isError      Whether the message represents an error. If {@code true},
+     *                     the message is displayed in red; otherwise, it is displayed in green.
+     * @param prefix       An optional prefix string to prepend to the message. If
+     *                     null, no prefix is added.
+     * @param checkSilent  Whether to check for silent mode configuration. If {@code true},
+     *                     the message will not be sent if silent mode is enabled.
      */
     private static void sendMessageToSender(String message, CommandSender sender, boolean isError, String prefix, boolean checkSilent) {
         if (checkSilent && ConfigManager.getConfig().getSilentMode()) return;
@@ -116,11 +128,17 @@ public class Utils {
     }
 
     /**
-     * Converts a legacy direction ID into a BlockFace.
+     * Determines the appropriate BlockFace direction based on whether the block is a wall sign
+     * or a floor-mounted block, and the provided direction value.
      *
-     * @param isWallSign Indicates if the block is a wall sign
-     * @param direction  The legacy direction ID
-     * @return Converted BlockFace
+     * @param isWallSign Indicates if the block is a wall sign. If true, the direction will be
+     *                   determined using the wall directions map. If false, the floor directions map
+     *                   will be used.
+     * @param direction  The integer value representing the direction. This value is used as a key
+     *                   to determine the corresponding BlockFace.
+     * @return The corresponding BlockFace for the given block type and direction value. Defaults
+     *         to BlockFace.NORTH for wall signs and BlockFace.SOUTH for floor blocks if the
+     *         direction is not found in the respective map.
      */
     public static BlockFace getBlockFace(boolean isWallSign, int direction) {
         return isWallSign
@@ -128,6 +146,14 @@ public class Utils {
                 : FLOOR_DIRECTIONS.getOrDefault(direction, BlockFace.SOUTH);
     }
 
+    /**
+     * Generates raw data byte information based on the state of a torch and the specified BlockFace direction.
+     *
+     * @param isTorch   Indicates whether the object is a torch.
+     * @param blockFace The direction represented by a BlockFace enum.
+     * @return A byte value representing the raw data for the given torch state and BlockFace.
+     * @deprecated This method is deprecated and may be removed in future updates.
+     */
     @Deprecated
     public static byte getRawData(boolean isTorch, BlockFace blockFace) {
         return switch (blockFace) {
@@ -140,10 +166,10 @@ public class Utils {
     }
 
     /**
-     * Generates a JSON-based tellraw teleport command for a player.
+     * Generates a Minecraft-specific teleportation command string to be used with a player.
      *
-     * @param playerName The name of the player.
-     * @return A formatted tellraw command string.
+     * @param playerName The name of the player for which the teleportation string is generated.
+     * @return A formatted string representing the teleportation command based on the player's name.
      */
     public static String getTeleportString(String playerName) {
         return """
@@ -171,29 +197,43 @@ public class Utils {
     }
 
     /**
-     * Retrieves all possible BlockFace directions.
+     * Retrieves a collection of BlockFace directions that align with an axis.
+     * Optionally includes the up and down BlockFaces depending on the parameter.
      *
-     * @param includeUpAndDown Whether to include vertical directions
-     * @return A collection of BlockFace
+     * @param includeUpAndDown If true, the resulting collection includes both up and down directions;
+     *                         otherwise, only horizontal axis directions are included.
+     * @return A collection of BlockFace directions based on the specified parameter.
      */
     public static Collection<BlockFace> getAxisBlockFaces(boolean includeUpAndDown) {
         return includeUpAndDown ? FULL_AXIS : AXIS;
     }
 
+    /**
+     * Retrieves a collection of BlockFace values that represent the primary axis directions.
+     *
+     * @return A collection of BlockFace values corresponding to the primary axis directions.
+     */
     public static Collection<BlockFace> getAxisBlockFaces() {
         return FULL_AXIS;
     }
 
     /**
-     * Converts a yaw angle to a horizontal BlockFace.
+     * Converts a yaw angle into a corresponding BlockFace direction.
      *
-     * @param yaw The yaw angle
-     * @return The determined BlockFace
+     * @param yaw The yaw angle to be converted, measured in degrees. Typically ranges from -180 to 180.
+     * @return The BlockFace that corresponds to the given yaw angle.
      */
     public static BlockFace yawToFace(float yaw) {
         return AXIS.get(Math.round(yaw / 90) & 0x3);
     }
 
+    /**
+     * Compares two Location objects to determine if they represent the same block location in the same world.
+     *
+     * @param loc1 The first Location object to compare, may be null.
+     * @param loc2 The second Location object to compare, may be null.
+     * @return True if both locations share the same block coordinates (x, y, z) and world name, otherwise false.
+     */
     public static boolean sameLocation(Location loc1, Location loc2) {
         if (loc1 == null || loc2 == null || loc1.getWorld() == null || loc2.getWorld() == null) {
             return false;
@@ -204,6 +244,14 @@ public class Utils {
                 loc1.getWorld().getName().equalsIgnoreCase(loc2.getWorld().getName());
     }
 
+    /**
+     * Determines the SignType based on the provided text and line.
+     *
+     * @param text The text to be evaluated, indicating the type of sign.
+     *             Acceptable values include specific keywords like "TRANSMITTER", "RECEIVER", etc.
+     * @param line The additional line parameter, which must not be null.
+     * @return The corresponding SignType if a match is found, otherwise null.
+     */
     public static SignType getType(String text, @NotNull String line) {
         return switch (text.toUpperCase()) {
             case "TRANSMITTER", "T" -> SignType.TRANSMITTER;
