@@ -16,17 +16,16 @@ public class WRLogger {
     /**
      * Creates an instance of WRLogger.
      *
-     * @param prefix This is added before all messages
-     * @param console Console reference from bukkit/spigot
-     * @param debug Enable debug mode
-     * @param color Enable color messages
+     * @param prefix  This is added before all messages
+     * @param console Console reference from Bukkit/Spigot
+     * @param debug   Enable debug mode
+     * @param color   Enable color messages
      */
     public WRLogger(String prefix, ConsoleCommandSender console, boolean debug, boolean color) {
         this.debug = debug;
         this.color = color;
-        this.console = console;
-        if (color) this.prefix = ChatColor.RED + prefix + ChatColor.RESET;
-        else this.prefix = prefix;
+        this.console = Optional.ofNullable(console); // Safe handling using Optional
+        this.prefix = color ? ChatColor.RED + prefix + ChatColor.RESET : prefix;
     }
 
     /**
