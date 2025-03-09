@@ -29,6 +29,7 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -139,12 +140,24 @@ public class WirelessRedstone extends JavaPlugin {
         adminCommandManager = new AdminCommandManager();
 
         if (sentryEnabled) {
-            YamlConfiguration pluginConfig = YamlConfiguration.loadConfiguration(
-                    new InputStreamReader(Objects.requireNonNull(getResource("plugin.yml")))
-            );
+            YamlConfiguration pluginConfig;
+            try (var resourceStream = getResource("plugin.yml")) {
+                if (resourceStream == null) {
+                    WRLogger.severe("Couldn't load plugin.yml resource. The file is missing from the plugin");
+                    getPluginLoader().disablePlugin(this);
+                    return;
+                }
 
-            getWRLogger().debug("Sentry dsn: " + pluginConfig.getString("sentry.dsn", ""));
+                pluginConfig = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(resourceStream));
+            } catch (IOException e) {
+                WRLogger.severe("Error reading 'plugin.yml': " + e.getMessage());
+                e.printStackTrace();
+                getPluginLoader().disablePlugin(this);
+                return;
+            }
 
+            getWRLogger().debug("Sentry DSN: " + pluginConfig.getString("sentry.dsn", ""));
             Sentry.init(pluginConfig.getString("sentry.dsn", ""), new WirelessRedstoneSentryClientFactory());
             resetSentryContext();
         }
