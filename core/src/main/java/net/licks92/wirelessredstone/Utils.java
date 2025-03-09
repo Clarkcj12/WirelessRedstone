@@ -265,5 +265,8 @@ public class Utils {
         };
     }
 
+    public static void sendFeedback(String s, CommandSender sender, boolean b, Object o, boolean b1) {
+    }
+
     private record Version(int major, int minor) {}
 }
