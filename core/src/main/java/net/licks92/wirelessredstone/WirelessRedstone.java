@@ -16,9 +16,11 @@ import net.licks92.wirelessredstone.signs.WirelessScreen;
 import net.licks92.wirelessredstone.signs.WirelessTransmitter;
 import net.licks92.wirelessredstone.storage.StorageManager;
 import net.licks92.wirelessredstone.string.StringManager;
+import net.licks92.wirelessredstone.string.Strings;
 import net.licks92.wirelessredstone.worldedit.WorldEditLoader;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -72,6 +74,10 @@ public class WirelessRedstone extends JavaPlugin {
         return commandManager;
     }
 
+    public static Strings getStrings() {
+        return stringManager.getStrings();
+    }
+
     @Override
     public void onEnable() {
         instance = this;
@@ -87,7 +93,7 @@ public class WirelessRedstone extends JavaPlugin {
 
         // Initialize logger with Adventure API
         config = ConfigManager.getConfig();
-        wrLogger = new WRLogger("[WirelessRedstone]", audience.console(), config.getDebugMode(), config.getColorLogging());
+        wrLogger = new WRLogger("[WirelessRedstone]", (ConsoleCommandSender) audience.console(), config.getDebugMode(), config.getColorLogging());
 
         wrLogger.info("Enabling WirelessRedstone");
 
