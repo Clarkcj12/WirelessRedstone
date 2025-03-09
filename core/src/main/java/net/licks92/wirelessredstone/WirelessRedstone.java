@@ -112,10 +112,16 @@ public class WirelessRedstone extends JavaPlugin {
         instance = this;
 
         if (!Utils.isCompatible()) {
+            String serverVersion = Bukkit.getVersion();
+            String pluginVersion = getDescription().getVersion();
             WRLogger.severe("**********");
-            WRLogger.severe("This plugin isn't compatible with this Minecraft version! Please check the bukkit/spigot page.");
+            WRLogger.severe("WirelessRedstone is not compatible with this server version!");
+            WRLogger.severe("Server version: " + serverVersion);
+            WRLogger.severe("Plugin version: " + pluginVersion);
+            WRLogger.severe("Please check the plugin's page for supported versions.");
             WRLogger.severe("**********");
             getPluginLoader().disablePlugin(this);
+            return;
         }
 
         new MaterialLib(this).initialize();
