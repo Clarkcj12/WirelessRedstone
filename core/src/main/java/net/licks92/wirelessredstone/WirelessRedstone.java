@@ -14,6 +14,7 @@ import net.licks92.wirelessredstone.sentry.WirelessRedstoneSentryClientFactory;
 import net.licks92.wirelessredstone.signs.WirelessReceiver;
 import net.licks92.wirelessredstone.signs.WirelessScreen;
 import net.licks92.wirelessredstone.signs.WirelessTransmitter;
+import net.licks92.wirelessredstone.storage.StorageConfiguration;
 import net.licks92.wirelessredstone.storage.StorageManager;
 import net.licks92.wirelessredstone.string.StringManager;
 import net.licks92.wirelessredstone.string.Strings;
@@ -106,8 +107,10 @@ public class WirelessRedstone extends JavaPlugin {
         storageManager = new StorageManager(config.getStorageType(), CHANNEL_FOLDER);
 
         // Initialize storage
+        storageManager = new StorageManager(this);
         if (!storageManager.getStorage().initStorage()) {
             wrLogger.severe("Failed to initialize storage. Plugin will stop.");
+
             disablePlugin(); // Clean lifecycle management, safely disable
             return; // Exit early since we can't continue
         }
@@ -254,6 +257,14 @@ public class WirelessRedstone extends JavaPlugin {
             }
         });
     }
+
+    public static StorageConfiguration getStorage() {
+        if (storageManager == null || storageManager.getStorage() == null) {
+            throw new IllegalStateException("StorageManager or StorageConfiguration is not initialized!");
+        }
+        return storageManager.getStorage();
+    }
+
 
     private void loadWorldEditIntegration() {
         if (getServer().getPluginManager().isPluginEnabled("WorldEdit")) {
