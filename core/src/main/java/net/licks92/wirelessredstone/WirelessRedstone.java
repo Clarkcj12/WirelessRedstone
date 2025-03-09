@@ -1,6 +1,7 @@
 package net.licks92.wirelessredstone;
 
 import io.sentry.Sentry;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.licks92.wirelessredstone.commands.Admin.AdminCommandManager;
@@ -9,7 +10,6 @@ import net.licks92.wirelessredstone.compat.InternalWorldEditHooker;
 import net.licks92.wirelessredstone.listeners.BlockListener;
 import net.licks92.wirelessredstone.listeners.PlayerListener;
 import net.licks92.wirelessredstone.listeners.WorldListener;
-import net.licks92.wirelessredstone.sentry.EventExceptionHandler;
 import net.licks92.wirelessredstone.sentry.WirelessRedstoneSentryClientFactory;
 import net.licks92.wirelessredstone.signs.WirelessReceiver;
 import net.licks92.wirelessredstone.signs.WirelessScreen;
@@ -19,7 +19,6 @@ import net.licks92.wirelessredstone.string.StringManager;
 import net.licks92.wirelessredstone.worldedit.WorldEditLoader;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -35,7 +34,7 @@ public class WirelessRedstone extends JavaPlugin {
     public static final String CHANNEL_FOLDER = "channels";
 
     private static WirelessRedstone instance;
-    private static WRLogger wrLogger; // Updated naming style for clarity
+    private static WRLogger wrLogger; // Updated to reflect Adventure Logger
     private static StringManager stringManager;
     private static StorageManager storageManager;
     private static SignManager signManager;
@@ -47,6 +46,7 @@ public class WirelessRedstone extends JavaPlugin {
     private InternalWorldEditHooker worldEditHooker;
     private boolean storageLoaded = false;
     private boolean sentryEnabled = true;
+    private BukkitAudiences audience; // For central Adventure API handling
 
     // Static getters for easy access
     public static WirelessRedstone getInstance() {
@@ -77,20 +77,20 @@ public class WirelessRedstone extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        // Console sender
-        ConsoleCommandSender console = getServer().getConsoleSender();
+        // Initialize Adventure Audience
+        audience = BukkitAudiences.create(this);
 
-        // Initial compatibility check
+        // Compatibility check
         if (!Utils.isCompatible()) {
-            logIncompatibleVersion(console);
+            logIncompatibleVersion();
             return;
         }
 
-        // Initialize WRLogger with Adventure API
+        // Initialize logger with Adventure API
         config = ConfigManager.getConfig();
-        wrLogger = new WRLogger("[WirelessRedstone]", console, config.getDebugMode(), config.getColorLogging());
+        wrLogger = new WRLogger("[WirelessRedstone]", audience.console(), config.getDebugMode(), config.getColorLogging());
 
-        wrLogger.info("Initializing WirelessRedstone...");
+        wrLogger.info("Enabling WirelessRedstone");
 
         // Load configurations
         config.update(CHANNEL_FOLDER);
@@ -102,7 +102,7 @@ public class WirelessRedstone extends JavaPlugin {
 
         // Initialize storage
         if (!storageManager.getStorage().initStorage()) {
-            wrLogger.severe("Failed to initialize storage. Disabling plugin.");
+            wrLogger.severe("Failed to initialize storage. Disabling plugin...");
             getPluginLoader().disablePlugin(this);
             return;
         }
@@ -121,16 +121,16 @@ public class WirelessRedstone extends JavaPlugin {
         registerEvents();
         registerCommands();
 
-        // WorldEdit integration
+        // Load WorldEdit integration
         loadWorldEditIntegration();
 
-        // Metrics tracking (if enabled)
+        // Enable metrics (if applicable)
         setupMetrics();
 
-        // Perform update check (if configured)
+        // Check for plugin updates
         checkForUpdates();
 
-        wrLogger.info("WirelessRedstone has been successfully enabled.");
+        wrLogger.info("WirelessRedstone has been successfully enabled!");
     }
 
     @Override
@@ -138,41 +138,31 @@ public class WirelessRedstone extends JavaPlugin {
         wrLogger.info("Disabling WirelessRedstone...");
 
         if (storageLoaded) {
-            getStorage().close();
+            getStorageManager().getStorage().close();
         }
 
         if (worldEditHooker != null) {
             worldEditHooker.unRegister();
         }
 
-        // Cleanup components
-        storageLoaded = false;
-        adminCommandManager = null;
-        commandManager = null;
-        signManager = null;
-        storageManager = null;
-        stringManager = null;
-        config = null;
-        wrLogger = null;
-        worldEditHooker = null;
-        instance = null;
-
-        if (sentryEnabled) {
-            Sentry.close();
+        if (audience != null) {
+            audience.close();
         }
 
-        wrLogger.info("WirelessRedstone has been disabled.");
+        // Cleanup resources
+        instance = null;
+        wrLogger = null;
     }
 
-    private void logIncompatibleVersion(ConsoleCommandSender console) {
+    private void logIncompatibleVersion() {
         String serverVersion = Bukkit.getBukkitVersion();
-        WRLogger incompatibleLogger = new WRLogger("[WirelessRedstone]", console, false, true);
+        Component errorMsg = Component.text(
+                "WirelessRedstone is not compatible with server version: " + serverVersion,
+                NamedTextColor.RED
+        );
 
-        incompatibleLogger.severe("**********");
-        incompatibleLogger.severe("WirelessRedstone is not compatible with this server version!");
-        incompatibleLogger.severe("Server Version: " + serverVersion);
-        incompatibleLogger.severe("Please check for supported versions on the plugin's page.");
-        incompatibleLogger.severe("**********");
+        // Output the error message using Adventure API
+        audience.console().sendMessage(errorMsg);
 
         getPluginLoader().disablePlugin(this);
     }
@@ -191,7 +181,7 @@ public class WirelessRedstone extends JavaPlugin {
                         "Screens", countSigns(WirelessScreen.class)
                 );
             } catch (Exception e) {
-                wrLogger.warning("Error gathering metrics: " + e.getMessage());
+                wrLogger.warning("Error tracking metrics: " + e.getMessage());
                 return Collections.emptyMap();
             }
         }));
@@ -212,7 +202,7 @@ public class WirelessRedstone extends JavaPlugin {
 
             resetSentryContext();
 
-            wrLogger.info("Sentry initialized for error reporting.");
+            wrLogger.info("Sentry initialized successfully.");
         } catch (Exception e) {
             wrLogger.severe("Failed to initialize Sentry: " + e.getMessage());
         }
@@ -228,21 +218,11 @@ public class WirelessRedstone extends JavaPlugin {
     private void registerEvents() {
         PluginManager pm = getServer().getPluginManager();
 
-        try {
-            if (sentryEnabled) {
-                EventExceptionHandler.registerEvents(new WorldListener(), this, ex -> {
-                    wrLogger.warning("Event exception caught: " + ex.getMessage());
-                    return false; // Do not cancel the event
-                });
-            }
-        } catch (RuntimeException ex) {
-            wrLogger.warning("Failed to register events.");
-            Sentry.capture(ex);
-        }
-
         pm.registerEvents(new WorldListener(), this);
         pm.registerEvents(new BlockListener(), this);
         pm.registerEvents(new PlayerListener(), this);
+
+        wrLogger.info("Events registered successfully.");
     }
 
     private void registerCommands() {
@@ -252,8 +232,13 @@ public class WirelessRedstone extends JavaPlugin {
         );
 
         commands.forEach((commandName, executor) -> {
-            Objects.requireNonNull(getCommand(commandName)).setExecutor(executor);
-            Objects.requireNonNull(getCommand(commandName)).setTabCompleter((TabCompleter) executor);
+            var command = getCommand(commandName);
+            if (command != null) {
+                command.setExecutor(executor);
+                command.setTabCompleter((TabCompleter) executor);
+            } else {
+                wrLogger.warning("Command '" + commandName + "' is missing from plugin.yml.");
+            }
         });
     }
 
@@ -271,13 +256,15 @@ public class WirelessRedstone extends JavaPlugin {
 
         UpdateChecker.init(this).requestUpdateCheck().whenComplete((result, throwable) -> {
             if (throwable == null && result.updateAvailable()) {
-                wrLogger.info("A new update is available: Version " + result.getNewestVersion());
+                wrLogger.info("An update is available: Version " + result.getNewestVersion());
             }
         });
     }
 
     private int countSigns(Class<?> signType) {
         if (storageManager == null || storageManager.getAllSigns() == null) return 0;
-        return (int) storageManager.getAllSigns().stream().filter(signType::isInstance).count();
+        return (int) storageManager.getAllSigns().stream()
+                .filter(signType::isInstance)
+                .count();
     }
 }
