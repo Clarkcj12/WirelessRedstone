@@ -19,6 +19,15 @@ import org.bukkit.command.CommandSender;
 )
 public class AdminAddOwner extends WirelessCommand {
 
+    /**
+     * Handles the execution of the "addowner" command, which adds a player as an owner
+     * to a specified wireless channel. The command ensures proper validation of arguments,
+     * permissions, and checks before adding the owner.
+     *
+     * @param sender The entity executing the command. This could be a player, console, or other valid command sender.
+     * @param args   An array of command arguments. The first argument is the channel name,
+     *               and the second is the player's name to be added as an owner.
+     */
     @Override
     public void onCommand(CommandSender sender, String[] args) {
         // Validate arguments
