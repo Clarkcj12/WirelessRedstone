@@ -18,6 +18,7 @@ import net.licks92.wirelessredstone.string.Strings;
 import net.licks92.wirelessredstone.worldedit.WorldEditLoader;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginManager;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 public class WirelessRedstone extends JavaPlugin {
 
@@ -307,8 +309,8 @@ public class WirelessRedstone extends JavaPlugin {
 
         commands.forEach((commandName, manager) -> {
             if (getCommand(commandName) != null) {
-                getCommand(commandName).setExecutor(manager);
-                getCommand(commandName).setTabCompleter(manager);
+                Objects.requireNonNull(getCommand(commandName)).setExecutor(manager);
+                Objects.requireNonNull(getCommand(commandName)).setTabCompleter((TabCompleter) manager);
             } else {
                 getLogger().warning("Command '" + commandName + "' is missing in plugin.yml.");
             }
