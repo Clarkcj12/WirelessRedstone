@@ -287,15 +287,25 @@ public class WirelessRedstone extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Close storage connection if initiiated
         if (storageLoaded) {
             getStorage().close();
         }
 
+        // Unregister any WorldEdit hooks
         if (worldEditHooker != null) {
             worldEditHooker.unRegister();
         }
 
+        // Ensure sentry shut down if enabled
+        if (sentryEnabled) {
+            Sentry.close();
+        }
+
+        // Reset static references to prevent memory leaks
         storageLoaded = false;
+        sentryEnabled = false;
+
         adminCommandManager = null;
         commandManager = null;
         signManager = null;
@@ -303,7 +313,11 @@ public class WirelessRedstone extends JavaPlugin {
         stringManager = null;
         config = null;
         WRLogger = null;
+        worldEditHooker = null;
         instance = null;
+
+        // Log proper disable message
+        getLogger().info("Disabled WirelessRedstone");
     }
 
     public void resetSentryContext() {
