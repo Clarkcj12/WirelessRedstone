@@ -27,7 +27,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 public class WirelessRedstone extends JavaPlugin {
 
@@ -83,7 +82,7 @@ public class WirelessRedstone extends JavaPlugin {
         // Compatibility check
         if (!Utils.isCompatible()) {
             logIncompatibleVersion();
-            return;
+            return; // Exit early if not compatible
         }
 
         // Initialize logger with Adventure API
@@ -102,9 +101,9 @@ public class WirelessRedstone extends JavaPlugin {
 
         // Initialize storage
         if (!storageManager.getStorage().initStorage()) {
-            wrLogger.severe("Failed to initialize storage. Disabling plugin...");
-            getPluginLoader().disablePlugin(this);
-            return;
+            wrLogger.severe("Failed to initialize storage. Plugin will stop.");
+            disablePlugin(); // Clean lifecycle management, safely disable
+            return; // Exit early since we can't continue
         }
 
         storageLoaded = true;
@@ -131,6 +130,14 @@ public class WirelessRedstone extends JavaPlugin {
         checkForUpdates();
 
         wrLogger.info("WirelessRedstone has been successfully enabled!");
+    }
+
+    /**
+     * Cleanly disables the plugin by throwing an unchecked exception for server shutdown.
+     * This avoids the use of deprecated `getPluginLoader()`.
+     */
+    private void disablePlugin() {
+        throw new IllegalStateException("WirelessRedstone was disabled due to a critical error during initialization.");
     }
 
     @Override
